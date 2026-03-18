@@ -227,7 +227,7 @@ model Promoter {
   completedProjects      PromoterCompletedProject[]
   ongoingProjects        PromoterOngoingProject[]
   bankEvents             PromoterBankEvent[]
-
+  projects      Project[]
   @@map("pi_promoters")
 }
 
