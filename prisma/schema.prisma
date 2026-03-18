@@ -8,48 +8,48 @@ datasource db {
 }
 
 model Project {
-  id              String       @id @default(uuid()) @db.Uuid
-  projectCode     String?      @unique @map("project_code")
-  name            String
-  city            String?
-  zone            String?
-  segment         String?
-  type            String?
-  currency        String?      @default("MAD")
-  totalCost       Decimal?     @map("total_cost") @db.Decimal(18, 2)
-  financingAmount Decimal?     @map("financing_amount") @db.Decimal(18, 2)
-  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                String                 @id @default(uuid()) @db.Uuid
+  projectCode       String?                @unique @map("project_code")
+  name              String
+  city              String?
+  zone              String?
+  segment           String?
+  type              String?
+  currency          String?                @default("MAD")
+  totalCost         Decimal?               @map("total_cost") @db.Decimal(18, 2)
+  financingAmount   Decimal?               @map("financing_amount") @db.Decimal(18, 2)
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  projectTradeName String?      @map("project_trade_name")
-  promoterId       String?      @map("promoter_id") @db.Uuid
-  spvName          String?      @map("spv_name")
-  fileType         String?      @map("file_type")
-  projectStatus    String?      @map("project_status")
-  country          String?      @default("Maroc")
-  region           String?
-  district         String?
-  subZone          String?      @map("sub_zone")
-  address          String?
-  latitude         Decimal?     @db.Decimal(12, 8)
-  longitude        Decimal?     @db.Decimal(12, 8)
-  promotionMode    String?      @map("promotion_mode")
-  targetClientele  String?      @map("target_clientele")
-  landArea         Decimal?     @map("land_area") @db.Decimal(18, 2)
-  builtArea        Decimal?     @map("built_area") @db.Decimal(18, 2)
-  saleableArea     Decimal?     @map("saleable_area") @db.Decimal(18, 2)
-  unitsCount       Int?         @map("units_count")
-  blocksCount      Int?         @map("blocks_count")
-  parkingCount     Int?         @map("parking_count")
-  dominantTypology String?      @map("dominant_typology")
-  projectSummary   String?      @map("project_summary")
-  analystComment   String?      @map("analyst_comment")
+  projectTradeName  String?                @map("project_trade_name")
+  promoterId        String?                @map("promoter_id") @db.Uuid
+  spvName           String?                @map("spv_name")
+  fileType          String?                @map("file_type")
+  projectStatus     String?                @map("project_status")
+  country           String?                @default("Maroc")
+  region            String?
+  district          String?
+  subZone           String?                @map("sub_zone")
+  address           String?
+  latitude          Decimal?               @db.Decimal(12, 8)
+  longitude         Decimal?               @db.Decimal(12, 8)
+  promotionMode     String?                @map("promotion_mode")
+  targetClientele   String?                @map("target_clientele")
+  landArea          Decimal?               @map("land_area") @db.Decimal(18, 2)
+  builtArea         Decimal?               @map("built_area") @db.Decimal(18, 2)
+  saleableArea      Decimal?               @map("saleable_area") @db.Decimal(18, 2)
+  unitsCount        Int?                   @map("units_count")
+  blocksCount       Int?                   @map("blocks_count")
+  parkingCount      Int?                   @map("parking_count")
+  dominantTypology  String?                @map("dominant_typology")
+  projectSummary    String?                @map("project_summary")
+  analystComment    String?                @map("analyst_comment")
 
-  promoter         Promoter?    @relation(fields: [promoterId], references: [id], onDelete: SetNull)
-  financedScopes   ProjectFinancedScope[]
-  marketRefs       ProjectMarketRef[]
-  locationPoints   ProjectLocationPoint[]
-  evaluations      Evaluation[]
+  promoter          Promoter?              @relation("PromoterProjects", fields: [promoterId], references: [id], onDelete: SetNull)
+  financedScopes    ProjectFinancedScope[]
+  marketRefs        ProjectMarketRef[]
+  locationPoints    ProjectLocationPoint[]
+  evaluations       Evaluation[]
 
   @@map("pi_projects")
 }
@@ -227,10 +227,10 @@ model Promoter {
   completedProjects      PromoterCompletedProject[]
   ongoingProjects        PromoterOngoingProject[]
   bankEvents             PromoterBankEvent[]
-  projects      Project[]
+  projects               Project[]                  @relation("PromoterProjects")
+
   @@map("pi_promoters")
 }
-
 model PromoterShareholder {
   id                     String    @id @default(uuid()) @db.Uuid
   promoterId             String    @map("promoter_id") @db.Uuid
