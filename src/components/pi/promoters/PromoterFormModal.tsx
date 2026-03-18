@@ -34,12 +34,29 @@ const emptyForm = {
   analystComment: "",
 };
 
-export default function PromoterFormModal({ open, mode, promoter, onClose }: Props) {
+export default function PromoterFormModal({
+  open,
+  mode,
+  promoter,
+  onClose,
+}: Props) {
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
     if (mode === "edit" && promoter) {
       setForm({
         promoterCode: promoter.promoterCode,
@@ -75,13 +92,16 @@ export default function PromoterFormModal({ open, mode, promoter, onClose }: Pro
     setSaving(true);
     const url = mode === "create" ? "/api/promoters" : `/api/promoters/${promoter?.id}`;
     const method = mode === "create" ? "POST" : "PUT";
+
     try {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
+
       if (!res.ok) throw new Error("La sauvegarde a échoué");
+
       window.location.reload();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Erreur de sauvegarde");
@@ -91,58 +111,104 @@ export default function PromoterFormModal({ open, mode, promoter, onClose }: Pro
   }
 
   return (
-    <div className="pi-modal-overlay">
-      <div className="pi-modal pi-modal-wide">
-        <div className="pi-modal-header">
-          <h2>{mode === "create" ? "Nouveau promoteur" : "Modifier le promoteur"}</h2>
-          <button onClick={onClose}>✕</button>
+    <div className="pi-modal-overlay" onClick={onClose}>
+      <div
+        className="pi-modal pi-modal-wide pi-modal-scrollable"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="pi-modal-header pi-modal-header-sticky">
+          <div>
+            <p className="pi-modal-kicker">
+              {mode === "create" ? "Nouveau promoteur" : "Modification promoteur"}
+            </p>
+            <h2>{mode === "create" ? "Créer un promoteur" : "Modifier le promoteur"}</h2>
+          </div>
+          <button onClick={onClose} className="pi-modal-close-btn" type="button">
+            ✕
+          </button>
         </div>
-        <div className="pi-form-grid">
-          {[
-            ["Code promoteur", "promoterCode"],
-            ["Raison sociale", "legalName"],
-            ["Nom commercial", "tradeName"],
-            ["ICE", "ice"],
-            ["RC", "rc"],
-            ["Forme juridique", "legalForm"],
-            ["Groupe", "groupName"],
-            ["Type promoteur", "promoterType"],
-            ["Spécialisation", "specialization"],
-            ["Ville dominante", "dominantCity"],
-            ["Zone dominante", "dominantZone"],
-            ["Standing dominant", "dominantStanding"],
-            ["Expérience PI (années)", "piExperienceYears"],
-            ["Ancienneté relation banque", "bankRelationshipYears"],
-            ["Contact principal", "mainContactName"],
-            ["Fonction du contact", "mainContactRole"],
-          ].map(([label, key]) => (
-            <label key={String(key)} className="pi-form-field">
-              <span>{label}</span>
-              <input className="pi-input" value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
-            </label>
-          ))}
-          <label className="pi-form-field pi-form-field-full">
-            <span>Commentaire analyste</span>
-            <textarea className="pi-input" rows={4} value={form.analystComment} onChange={(e) => setForm({ ...form, analystComment: e.target.value })} />
-          </label>
-          <div className="pi-checkbox-row pi-form-field-full">
+
+        <div className="pi-modal-body-scroll">
+          <div className="pi-form-grid">
             {[
-              ["Client banque", "isBankClient"],
-              ["Watchlist", "watchlistFlag"],
-              ["Restructuration", "restructuringFlag"],
-              ["Contentieux", "litigationFlag"],
+              ["Code promoteur", "promoterCode"],
+              ["Raison sociale", "legalName"],
+              ["Nom commercial", "tradeName"],
+              ["ICE", "ice"],
+              ["RC", "rc"],
+              ["Forme juridique", "legalForm"],
+              ["Groupe", "groupName"],
+              ["Type promoteur", "promoterType"],
+              ["Spécialisation", "specialization"],
+              ["Ville dominante", "dominantCity"],
+              ["Zone dominante", "dominantZone"],
+              ["Standing dominant", "dominantStanding"],
+              ["Expérience PI (années)", "piExperienceYears"],
+              ["Ancienneté relation banque", "bankRelationshipYears"],
+              ["Contact principal", "mainContactName"],
+              ["Fonction du contact", "mainContactRole"],
             ].map(([label, key]) => (
-              <label key={String(key)} className="pi-checkbox-item">
-                <input type="checkbox" checked={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} />
+              <label key={String(key)} className="pi-form-field">
                 <span>{label}</span>
+                <input
+                  className="pi-input"
+                  value={form[key]}
+                  onChange={(e) =>
+                    setForm({ ...form, [key]: e.target.value })
+                  }
+                />
               </label>
             ))}
+
+            <label className="pi-form-field pi-form-field-full">
+              <span>Commentaire analyste</span>
+              <textarea
+                className="pi-input pi-textarea"
+                rows={5}
+                value={form.analystComment}
+                onChange={(e) =>
+                  setForm({ ...form, analystComment: e.target.value })
+                }
+              />
+            </label>
+
+            <div className="pi-checkbox-row pi-form-field-full">
+              {[
+                ["Client banque", "isBankClient"],
+                ["Watchlist", "watchlistFlag"],
+                ["Restructuration", "restructuringFlag"],
+                ["Contentieux", "litigationFlag"],
+              ].map(([label, key]) => (
+                <label key={String(key)} className="pi-checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={form[key]}
+                    onChange={(e) =>
+                      setForm({ ...form, [key]: e.target.checked })
+                    }
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="pi-modal-actions">
-          <button className="pi-secondary-btn" onClick={onClose}>Annuler</button>
-          <button className="pi-primary-btn" onClick={submit} disabled={saving || !form.promoterCode || !form.legalName}>
-            {saving ? "Enregistrement..." : mode === "create" ? "Créer" : "Enregistrer"}
+
+        <div className="pi-modal-actions pi-modal-actions-sticky">
+          <button className="pi-secondary-btn" onClick={onClose} type="button">
+            Annuler
+          </button>
+          <button
+            className="pi-primary-btn"
+            onClick={submit}
+            disabled={saving || !form.promoterCode || !form.legalName}
+            type="button"
+          >
+            {saving
+              ? "Enregistrement..."
+              : mode === "create"
+              ? "Créer"
+              : "Enregistrer"}
           </button>
         </div>
       </div>
