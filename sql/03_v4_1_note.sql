@@ -1,0 +1,9 @@
+-- V4.1 note
+-- This version keeps the advanced PI inputs inside pi_evaluations.inputs (jsonb)
+-- to remain backward compatible with the current schema and deployment.
+--
+-- Suggested next industrial step (V4.2/V5):
+-- add dedicated columns for the most critical PI metrics such as:
+-- equity_pct, firm_sales_amount, reservations_amount, cancellations_count,
+-- customer_deposits_pct, work_progress_pct, construction_delay_months,
+-- cost_overrun_pct, guarantee_coverage_pct, banking_conduct_score, etc.
