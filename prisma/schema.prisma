@@ -1,0 +1,400 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id              String       @id @default(uuid()) @db.Uuid
+  projectCode     String?      @unique @map("project_code")
+  name            String
+  city            String?
+  zone            String?
+  segment         String?
+  type            String?
+  currency        String?      @default("MAD")
+  totalCost       Decimal?     @map("total_cost") @db.Decimal(18, 2)
+  financingAmount Decimal?     @map("financing_amount") @db.Decimal(18, 2)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  projectTradeName String?      @map("project_trade_name")
+  promoterId       String?      @map("promoter_id") @db.Uuid
+  spvName          String?      @map("spv_name")
+  fileType         String?      @map("file_type")
+  projectStatus    String?      @map("project_status")
+  country          String?      @default("Maroc")
+  region           String?
+  district         String?
+  subZone          String?      @map("sub_zone")
+  address          String?
+  latitude         Decimal?     @db.Decimal(12, 8)
+  longitude        Decimal?     @db.Decimal(12, 8)
+  promotionMode    String?      @map("promotion_mode")
+  targetClientele  String?      @map("target_clientele")
+  landArea         Decimal?     @map("land_area") @db.Decimal(18, 2)
+  builtArea        Decimal?     @map("built_area") @db.Decimal(18, 2)
+  saleableArea     Decimal?     @map("saleable_area") @db.Decimal(18, 2)
+  unitsCount       Int?         @map("units_count")
+  blocksCount      Int?         @map("blocks_count")
+  parkingCount     Int?         @map("parking_count")
+  dominantTypology String?      @map("dominant_typology")
+  projectSummary   String?      @map("project_summary")
+  analystComment   String?      @map("analyst_comment")
+
+  promoter         Promoter?    @relation(fields: [promoterId], references: [id], onDelete: SetNull)
+  financedScopes   ProjectFinancedScope[]
+  marketRefs       ProjectMarketRef[]
+  locationPoints   ProjectLocationPoint[]
+  evaluations      Evaluation[]
+
+  @@map("pi_projects")
+}
+
+model ModelVersion {
+  id            String            @id @default(uuid()) @db.Uuid
+  code          String            @unique
+  label         String?
+  isActive      Boolean           @default(true) @map("is_active")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  domainWeights DomainWeight[]
+  kpis          Kpi[]
+  thresholds    KpiThreshold[]
+  segmentAdjustments SegmentAdjustment[]
+  zoneAdjustments    ZoneAdjustment[]
+  d5Triggers         D5Trigger[]
+  evaluations        Evaluation[]
+
+  @@map("pi_model_versions")
+}
+
+model DomainWeight {
+  id         String       @id @default(uuid()) @db.Uuid
+  modelCode  String       @map("model_code")
+  domainCode String       @map("domain_code")
+  weight     Decimal      @db.Decimal(10, 4)
+
+  modelVersion ModelVersion @relation(fields: [modelCode], references: [code], onDelete: Cascade)
+
+  @@unique([modelCode, domainCode])
+  @@map("pi_domain_weights")
+}
+
+model Kpi {
+  id         String       @id @default(uuid()) @db.Uuid
+  modelCode  String       @map("model_code")
+  domainCode String       @map("domain_code")
+  kpiCode    String       @map("kpi_code")
+  label      String
+  unit       String?
+  valueType  String       @default("number") @map("value_type")
+  direction  String       @default("higher_is_better")
+  weight     Decimal      @default(1.0) @db.Decimal(10, 4)
+  isActive   Boolean      @default(true) @map("is_active")
+
+  modelVersion ModelVersion  @relation(fields: [modelCode], references: [code], onDelete: Cascade)
+
+  @@unique([modelCode, kpiCode])
+  @@map("pi_kpis")
+}
+
+model KpiThreshold {
+  id         String       @id @default(uuid()) @db.Uuid
+  modelCode  String       @map("model_code")
+  kpiCode    String       @map("kpi_code")
+  segment    String?
+  zone       String?
+  bandMin    Decimal?     @map("band_min") @db.Decimal(18, 4)
+  bandMax    Decimal?     @map("band_max") @db.Decimal(18, 4)
+  score      Decimal      @db.Decimal(10, 4)
+
+  modelVersion ModelVersion @relation(fields: [modelCode], references: [code], onDelete: Cascade)
+
+  @@map("pi_kpi_thresholds")
+}
+
+model SegmentAdjustment {
+  id         String       @id @default(uuid()) @db.Uuid
+  modelCode  String       @map("model_code")
+  segment    String
+  alpha      Decimal      @db.Decimal(10, 4)
+
+  modelVersion ModelVersion @relation(fields: [modelCode], references: [code], onDelete: Cascade)
+
+  @@unique([modelCode, segment])
+  @@map("pi_segment_adjustments")
+}
+
+model ZoneAdjustment {
+  id         String       @id @default(uuid()) @db.Uuid
+  modelCode  String       @map("model_code")
+  zone       String
+  beta       Decimal      @db.Decimal(10, 4)
+
+  modelVersion ModelVersion @relation(fields: [modelCode], references: [code], onDelete: Cascade)
+
+  @@unique([modelCode, zone])
+  @@map("pi_zone_adjustments")
+}
+
+model D5Trigger {
+  id          String       @id @default(uuid()) @db.Uuid
+  modelCode   String       @map("model_code")
+  triggerCode String       @map("trigger_code")
+  label       String
+  severity    String
+  malus       Decimal      @default(0) @db.Decimal(10, 4)
+
+  modelVersion ModelVersion @relation(fields: [modelCode], references: [code], onDelete: Cascade)
+
+  @@unique([modelCode, triggerCode])
+  @@map("pi_d5_triggers")
+}
+
+model Evaluation {
+  id             String       @id @default(uuid()) @db.Uuid
+  projectId      String       @map("project_id") @db.Uuid
+  modelCode      String       @map("model_code")
+  status         String       @default("draft")
+  inputs         Json         @default("{}")
+  results        Json         @default("{}")
+  finalScore     Decimal?     @map("final_score") @db.Decimal(10, 4)
+  grade          String?
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  modelVersion   ModelVersion @relation(fields: [modelCode], references: [code], onDelete: Restrict)
+
+  @@index([projectId], map: "idx_pi_eval_project")
+  @@index([modelCode], map: "idx_pi_eval_model")
+  @@map("pi_evaluations")
+}
+
+model AuditLog {
+  id         String    @id @default(uuid()) @db.Uuid
+  entityType String    @map("entity_type")
+  entityId   String    @map("entity_id") @db.Uuid
+  action     String
+  actor      String?
+  oldValue   Json?     @map("old_value")
+  newValue   Json?     @map("new_value")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("pi_audit_log")
+}
+
+
+model Promoter {
+  id                     String                     @id @default(uuid()) @db.Uuid
+  promoterCode           String                     @unique @map("promoter_code")
+  legalName              String                     @map("legal_name")
+  tradeName              String?                    @map("trade_name")
+  ice                    String?
+  rc                     String?
+  taxId                  String?                    @map("tax_id")
+  legalForm              String?                    @map("legal_form")
+  creationDate           DateTime?                  @map("creation_date") @db.Date
+  groupName              String?                    @map("group_name")
+  promoterType           String?                    @map("promoter_type")
+  specialization         String?
+  dominantCity           String?                    @map("dominant_city")
+  dominantZone           String?                    @map("dominant_zone")
+  dominantStanding       String?                    @map("dominant_standing")
+  piExperienceYears      Int?                       @map("pi_experience_years")
+  completedProjectsCount Int                        @default(0) @map("completed_projects_count")
+  ongoingProjectsCount   Int                        @default(0) @map("ongoing_projects_count")
+  isBankClient           Boolean                    @default(false) @map("is_bank_client")
+  bankRelationshipYears  Int?                       @map("bank_relationship_years")
+  watchlistFlag          Boolean                    @default(false) @map("watchlist_flag")
+  restructuringFlag      Boolean                    @default(false) @map("restructuring_flag")
+  litigationFlag         Boolean                    @default(false) @map("litigation_flag")
+  headOfficeAddress      String?                    @map("head_office_address")
+  phone                  String?
+  email                  String?
+  website                String?
+  mainContactName        String?                    @map("main_contact_name")
+  mainContactRole        String?                    @map("main_contact_role")
+  analystComment         String?                    @map("analyst_comment")
+  createdAt              DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  shareholders           PromoterShareholder[]
+  completedProjects      PromoterCompletedProject[]
+  ongoingProjects        PromoterOngoingProject[]
+  bankEvents             PromoterBankEvent[]
+
+  @@map("pi_promoters")
+}
+
+model PromoterShareholder {
+  id                     String    @id @default(uuid()) @db.Uuid
+  promoterId             String    @map("promoter_id") @db.Uuid
+  shareholderName        String    @map("shareholder_name")
+  shareholderType        String?   @map("shareholder_type")
+  ownershipPct           Decimal?  @map("ownership_pct") @db.Decimal(5,2)
+  nationality            String?
+  isBankClient           Boolean   @default(false) @map("is_bank_client")
+  bankRelationshipStatus String?   @map("bank_relationship_status")
+  incidentFlag           Boolean   @default(false) @map("incident_flag")
+  watchlistFlag          Boolean   @default(false) @map("watchlist_flag")
+  litigationFlag         Boolean   @default(false) @map("litigation_flag")
+  comment                String?
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  promoter               Promoter  @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+
+  @@index([promoterId])
+  @@map("pi_promoter_shareholders")
+}
+
+model PromoterCompletedProject {
+  id                String    @id @default(uuid()) @db.Uuid
+  promoterId        String    @map("promoter_id") @db.Uuid
+  projectName       String    @map("project_name")
+  city              String?
+  zone              String?
+  standing          String?
+  projectType       String?   @map("project_type")
+  unitsCount        Int?      @map("units_count")
+  projectCost       Decimal?  @map("project_cost") @db.Decimal(18,2)
+  projectRevenue    Decimal?  @map("project_revenue") @db.Decimal(18,2)
+  financedByBank    Boolean   @default(false) @map("financed_by_bank")
+  financingBankName String?   @map("financing_bank_name")
+  financedByOurBank Boolean   @default(false) @map("financed_by_our_bank")
+  deliveryYear      Int?      @map("delivery_year")
+  outcomeStatus     String?   @map("outcome_status")
+  watchlistFlag     Boolean   @default(false) @map("watchlist_flag")
+  incidentFlag      Boolean   @default(false) @map("incident_flag")
+  restructuringFlag Boolean   @default(false) @map("restructuring_flag")
+  litigationFlag    Boolean   @default(false) @map("litigation_flag")
+  comment           String?
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  promoter          Promoter  @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+
+  @@index([promoterId])
+  @@map("pi_promoter_completed_projects")
+}
+
+model PromoterOngoingProject {
+  id                    String    @id @default(uuid()) @db.Uuid
+  promoterId            String    @map("promoter_id") @db.Uuid
+  projectName           String    @map("project_name")
+  city                  String?
+  zone                  String?
+  standing              String?
+  projectType           String?   @map("project_type")
+  unitsCount            Int?      @map("units_count")
+  projectCost           Decimal?  @map("project_cost") @db.Decimal(18,2)
+  expectedRevenue       Decimal?  @map("expected_revenue") @db.Decimal(18,2)
+  workProgressPct       Decimal?  @map("work_progress_pct") @db.Decimal(5,2)
+  precommercialisationPct Decimal? @map("precommercialisation_pct") @db.Decimal(5,2)
+  financedByBank        Boolean   @default(false) @map("financed_by_bank")
+  financingBankName     String?   @map("financing_bank_name")
+  financedByOurBank     Boolean   @default(false) @map("financed_by_our_bank")
+  situationStatus       String?   @map("situation_status")
+  watchlistFlag         Boolean   @default(false) @map("watchlist_flag")
+  incidentFlag          Boolean   @default(false) @map("incident_flag")
+  comment               String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  promoter              Promoter  @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+
+  @@index([promoterId])
+  @@map("pi_promoter_ongoing_projects")
+}
+
+model PromoterBankEvent {
+  id           String    @id @default(uuid()) @db.Uuid
+  promoterId   String    @map("promoter_id") @db.Uuid
+  eventDate    DateTime  @map("event_date") @db.Date
+  eventType    String    @map("event_type")
+  severity     String?
+  resolvedFlag Boolean   @default(false) @map("resolved_flag")
+  comment      String?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  promoter     Promoter  @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+
+  @@index([promoterId])
+  @@map("pi_promoter_bank_events")
+}
+
+
+model ProjectFinancedScope {
+  id                     String   @id @default(uuid()) @db.Uuid
+  projectId              String   @map("project_id") @db.Uuid
+  scopeType              String   @map("scope_type")
+  scopeCode              String?  @map("scope_code")
+  scopeLabel             String   @map("scope_label")
+  scopeProjectType       String?  @map("scope_project_type")
+  scopeUnitsCount        Int?     @map("scope_units_count")
+  scopeArea              Decimal? @map("scope_area") @db.Decimal(18,2)
+  scopeCost              Decimal? @map("scope_cost") @db.Decimal(18,2)
+  scopeRevenue           Decimal? @map("scope_revenue") @db.Decimal(18,2)
+  scopeFinancingAmount   Decimal? @map("scope_financing_amount") @db.Decimal(18,2)
+  scopeEquityAmount      Decimal? @map("scope_equity_amount") @db.Decimal(18,2)
+  scopeProgressPct       Decimal? @map("scope_progress_pct") @db.Decimal(10,2)
+  scopeLegalStatus       String?  @map("scope_legal_status")
+  scopeShareOfProjectPct Decimal? @map("scope_share_of_project_pct") @db.Decimal(10,2)
+  scopeComment           String?  @map("scope_comment")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "idx_pi_project_financed_scopes_project_id")
+  @@map("pi_project_financed_scopes")
+}
+
+model ProjectMarketRef {
+  id                   String   @id @default(uuid()) @db.Uuid
+  projectId            String   @map("project_id") @db.Uuid
+  refProjectName       String   @map("ref_project_name")
+  refPromoterName      String?  @map("ref_promoter_name")
+  refCity              String?  @map("ref_city")
+  refZone              String?  @map("ref_zone")
+  refStanding          String?  @map("ref_standing")
+  refProjectType       String?  @map("ref_project_type")
+  refPriceMin          Decimal? @map("ref_price_min") @db.Decimal(18,2)
+  refPriceMax          Decimal? @map("ref_price_max") @db.Decimal(18,2)
+  refFinancedByBank    Boolean? @default(false) @map("ref_financed_by_bank")
+  refFinancedByOurBank Boolean? @default(false) @map("ref_financed_by_our_bank")
+  refSuccessFlag       Boolean? @default(false) @map("ref_success_flag")
+  refWatchlistFlag     Boolean? @default(false) @map("ref_watchlist_flag")
+  refIssueStatus       String?  @map("ref_issue_status")
+  refComment           String?  @map("ref_comment")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "idx_pi_project_market_refs_project_id")
+  @@map("pi_project_market_refs")
+}
+
+model ProjectLocationPoint {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  pointType   String   @map("point_type")
+  label       String
+  city        String?
+  zone        String?
+  latitude    Decimal? @db.Decimal(12,8)
+  longitude   Decimal? @db.Decimal(12,8)
+  standing    String?
+  issueStatus String?  @map("issue_status")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "idx_pi_project_location_points_project_id")
+  @@map("pi_project_location_points")
+}
